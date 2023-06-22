@@ -1,0 +1,73 @@
+#Include 'Totvs.ch'
+ 
+//Retorna dados do endereço através do cep. 
+//Lucas Silva
+
+User Function zViaCep(cCep)
+ 
+    Local aArea         := GetArea()
+    Local aHeader       := {}    
+    Local oRestClient   := FWRest():New("https://viacep.com.br/ws")
+    Local oJson         := JsonObject():New()
+    Local cLog          := ''
+     
+    Default cCep        := ''
+
+
+
+        RPCSetType( 3 )
+
+        RPCSetEnv( "01", "001001", "", "", "", "", {}, , , , )
+    
+ 
+    //fConOut("[U_zViaCep] - Entrou na função que consulta as informações do endereco pelo CEP")
+    MSGINFO("[U_zViaCep] - Entrou na função que consulta as informações do endereco pelo CEP",'info')
+ 
+    //Retira espaÃ§os,traÃ§os e pontos caso receba assim dos parametros
+    cCep := StrTran(StrTran(StrTran(cCep," ",""),"-",""),".","")
+ 
+    aadd(aHeader,'User-Agent: Mozilla/4.0 (compatible; Protheus '+GetBuild()+')')
+    aAdd(aHeader,'Content-Type: application/json; charset=utf-8')
+ 
+    //[GET] Consulta Dados na Api
+    oRestClient:setPath("/"+cCep+"/json/")
+    If oRestClient:Get(aHeader)
+          
+        oJson:FromJson(oRestClient:CRESULT)          
+ 
+        //Se as keys nÃ£o existirem, cria elas com conteudo vazio.
+        oJson['cep']        := Iif( ValType(oJson['cep'])         != "U", oJson['cep']        , "")
+        oJson['logradouro'] := Iif( ValType(oJson['logradouro'])  != "U", oJson['logradouro'] , "")
+        oJson['complemento']:= Iif( ValType(oJson['complemento']) != "U", oJson['complemento'], "")
+        oJson['bairro']     := Iif( ValType(oJson['bairro'])      != "U", oJson['bairro']     , "")
+        oJson['localidade'] := Iif( ValType(oJson['localidade'])  != "U", oJson['localidade'] , "")
+        oJson['uf']         := Iif( ValType(oJson['uf'])          != "U", oJson['uf']         , "")
+        oJson['ibge']       := Iif( ValType(oJson['ibge'])        != "U", SubStr(oJson['ibge'],3,5), "")
+        oJson['gia']        := Iif( ValType(oJson['gia'])         != "U", oJson['gia']        , "") 
+        oJson['ddd']        := Iif( ValType(oJson['ddd'])         != "U", oJson['ddd']        , "")
+        oJson['siafi']      := Iif( ValType(oJson['siafi'])       != "U", oJson['siafi']      , "")
+ 
+        VarInfo("[U_zViaCep] - Resultado da consulta ->",oJson)
+    Else
+        //fConOut("[U_zViaCep] - ** Erro Api ViaCep: "+oRestClient:GetLastError())
+        MSGINFO("[U_zViaCep] - ** Erro Api ViaCep: "+oRestClient:GetLastError(),'info')
+    Endif  
+ 
+   oJson['erro']:=  Iif( ValType(oJson['cep']) == "U", "Api não retornou dados do cep: "+cValTochar(cCep) ,"")      
+ 
+    //fConOut("[U_zViaCep] - Finalizou na função que consulta as informações do endereco pelo CEP")
+    MSGINFO("[U_zViaCep] - Finalizou na função que consulta as informações do endereco pelo CEP",'INFO') 
+    cLog := oJson['logradouro']
+    MSGINFO(cLog,'teste')
+ 
+    FreeObj(oRestClient)
+    RestArea(aArea)
+Return oJson
+ 
+Static Function fConOut(cLog)
+     
+    Default cLog := "Log empty"
+         
+    FwLogMsg("INFO", /*cTransactionId*/, "fConOut", FunName(), "", "01", cLog, 0, 0, {})
+              
+Return
